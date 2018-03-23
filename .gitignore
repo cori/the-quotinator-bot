@@ -1,1 +1,8 @@
 .gitconfig
+last_mention_id.txt
+last_dm_id.txt
+
+.bash_it/
+.bashrc.bak
+.wget-hsts
+glitch-init.sh

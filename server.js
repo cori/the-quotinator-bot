@@ -7,15 +7,16 @@ var fs = require('fs'),
     config = {
     /* Be sure to update the .env file with your API keys. See how to get them: https://botwiki.org/tutorials/make-an-image-posting-twitter-bot/#creating-a-twitter-app*/      
       twitter: {
-        consumer_key: process.env.CONSUMER_KEY,
-        consumer_secret: process.env.CONSUMER_SECRET,
-        access_token: process.env.ACCESS_TOKEN,
-        access_token_secret: process.env.ACCESS_TOKEN_SECRET
+        consumer_key: process.env.TESTING_CKEY,
+        consumer_secret: process.env.TESTING_CSECRET,
+        access_token: process.env.TESTING_ATOKEN,
+        access_token_secret: process.env.TESTING_ASECRET
       }
     },
     T = new Twit(config.twitter),
     stream = T.stream('statuses/sample');
 
+//  mat use some of this later
 var bot_responses = [
   "I am awake!",
   "I'm awake!",
@@ -28,11 +29,17 @@ function random_from_array(arr){
   return arr[Math.floor(Math.random()*arr.length)]; 
 }
 
-app.use(express.static('public'));
+app.use(express.static('public')); 
 
 /* You can use uptimerobot.com or a similar site to hit your /tweet endpoint to wake up your app and make your Twitter bot tweet. */
+app.all("/stream", function (request, response) {
+  stream.on('tweet', function (tweet) {
+    console.log(tweet)
+  })
+});
 
 app.all("/tweet", function (request, response) {
+  
   /* Respond to @ mentions */
   fs.readFile(__dirname + '/last_mention_id.txt', 'utf8', function (err, last_mention_id) {
     /* First, let's load the ID of the last tweet we responded to. */
