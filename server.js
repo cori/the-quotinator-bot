@@ -45,7 +45,7 @@ app.all("/tweet", function (request, response) {
     /* First, let's load the ID of the last tweet we responded to. */
     console.log('last_mention_id:', last_mention_id);
 
-    T.get('search/tweets', { q: 'to:' + process.env.TWITTER_HANDLE + ' -from:' + process.env.TWITTER_HANDLE, since_id: last_mention_id }, function(err, data, response) {
+    T.get('search/tweets', { q: '-RT AND !', since_id: last_mention_id, lang: 'en' }, function(err, data, response) {
       if (err){
         console.log('Error!', err);
         return false;
@@ -58,22 +58,23 @@ app.all("/tweet", function (request, response) {
           console.log(status.text);
           console.log(status.user.screen_name);
 
+          //  TODO:  make this into a rewteet
           /* Now we can respond to each tweet. */
-          T.post('statuses/update', {
-            status: '@' + status.user.screen_name + ' ' + random_from_array(bot_responses),
-            in_reply_to_status_id: status.id_str
-          }, function(err, data, response) {
-            if (err){
-                /* TODO: Proper error handling? */
-              console.log('Error!', err);
-            }
-            else{
-              fs.writeFile(__dirname + '/last_mention_id.txt', status.id_str, function (err) {
-                /* TODO: Error handling? */
-                console.log('Error!', err);
-              });
-            }
-          });
+          // T.post('statuses/update', {
+          //   status: '@' + status.user.screen_name + ' ' + random_from_array(bot_responses),
+          //   in_reply_to_status_id: status.id_str
+          // }, function(err, data, response) {
+          //   if (err){
+          //       /* TODO: Proper error handling? */
+          //     console.log('Error!', err);
+          //   }
+          //   else{
+          //     fs.writeFile(__dirname + '/last_mention_id.txt', status.id_str, function (err) {
+          //       /* TODO: Error handling? */
+          //       console.log('Error!', err);
+          //     });
+          //   }
+          // });
         });
       } else {
         /* No new mentions since the last time we checked. */
@@ -81,52 +82,11 @@ app.all("/tweet", function (request, response) {
       }
     });    
   });
-
-  /* Respond to DMs */
-
-  fs.readFile(__dirname + '/last_dm_id.txt', 'utf8', function (err, last_dm_id) {
-    if (err){
-      console.log('Error!', err);
-      return false;
-    }
-    /* Load the ID of the last DM we responded to. */
-    console.log('last_dm_id:', last_dm_id);
-
-    T.get('direct_messages', { since_id: last_dm_id, count: 200 }, function(err, dms, response) {
-      /* Next, let's search for Tweets that mention our bot, starting after the last mention we responded to. */
-      if (dms.length){
-        dms.forEach(function(dm) {
-          console.log(dm.sender_id);
-          console.log(dm.id_str);
-          console.log(dm.text);
-
-          /* Now we can respond to each tweet. */
-          T.post('direct_messages/new', {
-            user_id: dm.sender_id,
-            text: random_from_array(bot_responses)
-          }, function(err, data, response) {
-            if (err){
-              /* TODO: Proper error handling? */
-              console.log('Error!');
-              console.log(err);
-            }
-            else{
-              fs.writeFile(__dirname + '/last_dm_id.txt', dm.id_str, function (err) {
-                /* TODO: Error handling? */
-              });
-            }
-          });
-        });
-      } else {
-        /* No new DMs since the last time we checked. */
-        console.log('No new DMs...');      
-      }
-    });    
-  });  
   
   /* TODO: Handle proper responses based on whether the tweets succeed, using Promises. For now, let's just return a success message no matter what. */
   response.sendStatus(200);
 });
+
 
 var listener = app.listen(process.env.PORT, function () {
   console.log('Your bot is running on port ' + listener.address().port);
