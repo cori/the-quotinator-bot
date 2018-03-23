@@ -29,7 +29,14 @@ function random_from_array(arr){
   return arr[Math.floor(Math.random()*arr.length)]; 
 }
 
-app.use(express.static('public')); 
+app.use(express.static('public'));
+
+app.all('/test/:input', function( req, resp ) {
+  var newStr = decodeURIComponent( req.params.input );
+  var trivialWords = ['a', 'an', 'the', 'of' ];
+  var newStr = removeSubstringsInArray( newStr, trivialWords );
+  resp.status(200).send( newStr );
+});
 
 /* You can use uptimerobot.com or a similar site to hit your /tweet endpoint to wake up your app and make your Twitter bot tweet. */
 app.all("/stream", function (request, response) {
@@ -87,6 +94,14 @@ app.all("/tweet", function (request, response) {
   response.sendStatus(200);
 });
 
+function removeSubstringsInArray( input, arrayOfStrings ) {
+  if( arrayOfStrings.length == 0 || !Array.isArray( arrayOfStrings ) ) {
+    return input;
+  }
+  
+  return removeSubstringsInArray( input.replace( arrayOfStrings.pop(), '' ), arrayOfStrings );
+  
+}
 
 var listener = app.listen(process.env.PORT, function () {
   console.log('Your bot is running on port ' + listener.address().port);
