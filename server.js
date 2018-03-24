@@ -16,7 +16,6 @@ var fs = require('fs'),
     app = express(),   
     Twit = require('twit'),
     config = {
-    /* Be sure to update the .env file with your API keys. See how to get them: https://botwiki.org/tutorials/make-an-image-posting-twitter-bot/#creating-a-twitter-app*/      
       twitter: {
         consumer_key: process.env.TESTING_CKEY,
         consumer_secret: process.env.TESTING_CSECRET,
@@ -27,7 +26,7 @@ var fs = require('fs'),
     T = new Twit(config.twitter),
     stream = T.stream('statuses/sample');
 
-//  mat use some of this later
+//  may use some of this later
 var bot_responses = [
   "I am awake!",
   "I'm awake!",
@@ -65,21 +64,20 @@ app.all("/stream", function (request, response) {
 
 app.all("/tweet", function (request, response) {
   
-  /* Respond to @ mentions */
+  //  I don't think we actually need this with the API endpoint we're using
   fs.readFile(__dirname + '/last_checked_id.txt', 'utf8', function (err, last_checked_id) {
-    /* First, let's load the ID of the last tweet we responded to. */
-    console.log('last_checked_id:', last_checked_id);
+
     var trivialWords = [ 'a', 'an', 'the', 'of', 'at', 'in', 'to', 'at', 'with' ];
 
     //  using count: 1 means we'll allow Twitter to pick a "random" tweet
     T.get('search/tweets', { q: '! OR :) OR :( filter:safe -filter:retweets -filter:quotes -filter:links -filter:media', since_id: last_checked_id, lang: 'en', count: 1, tweet_mode: 'extended' }, function(err, data, response) {
       if (err){
-        console.log('Error!', err);
+        console.log('Search error!', err);
         return false;
       }
-      /* Next, let's search for Tweets that mention our bot, starting after the last mention we responded to. */
+
       if ( data.statuses.length ) {
-        // console.log(data.statuses);
+
         data.statuses.forEach( function( status ) {
           console.log( status.full_text );
           var statText = removeAtMentions( status.full_text );
@@ -90,31 +88,25 @@ app.all("/tweet", function (request, response) {
           if ( statText.includes( '...' ) || status.truncated ) {
               console.log( status );
           }
-          // console.log(status.id_str);
-          // console.log(status.text);
-          // console.log(status.user.screen_name);
 
-          //  TODO:  make this into a rewteet
           T.post('statuses/update', {
-            status: '"' + quotableWord + '" https://twitter.com/statuses/' + status.id,
-            // quoted_status_id_str: status.id_str,
-            // in_reply_to_status_id: status.id_str,
-            in_reply_to_status_id: status.id,
+            status: '"' + quotableWord + '" https://twitter.com/statuses/' + status.id_str,
+            quoted_status_id_str: status.id_str,
+            in_reply_to_status_id: status.id_str,
             is_quote_status: true,
             quoted_status: status
-            // status: '@' + status.user.screen_name + ' ' + random_from_array(bot_responses),
-            // in_reply_to_status_id: status.id_str
           }, function(err, data, response) {
             if (err){
-                /* TODO: Proper error handling? */
-              console.log('Error!', err);
-              console.log(data);
-              console.log(response);
+                /* TODO: Proper error handling? 
+                */
+              console.log('Retweet error!', err);
             }
             else{
-              fs.writeFile(__dirname + '/last_checked_id.txt', status.id_str, function (err) {
+              fs.writeFile(__dirname + '/last_checked_id.txt', status.id_str, 'utf8', function (err) {
+                if (err) {
                 /* TODO: Error handling? */
-                console.log('Error!', err);
+                  console.log('File writing error!', err);
+                }
               });
             }
           });
@@ -133,7 +125,6 @@ app.all("/tweet", function (request, response) {
 
 function removeAtMentions( input ) {
 
-  // return input.replace( /@.*[\s]{1}/gi, '');
   return input.replace( /@\w*/gi, '');
   
 }
